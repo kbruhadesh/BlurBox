@@ -1,6 +1,6 @@
-# BLURBX - PDF Redaction Tool
+# BLURBOX - PDF Redaction Tool
 
-BLURBX is a powerful web-based PDF redaction tool that helps you protect sensitive information in your PDF documents. The application provides an intuitive interface for redacting various types of sensitive data, including phone numbers, email addresses, links, dates, and more.
+BLURBOX is a powerful web-based PDF redaction tool that helps you protect sensitive information in your PDF documents. The application provides an intuitive interface for redacting various types of sensitive data, including phone numbers, email addresses, links, dates, and more.
 
 ## Features
 
@@ -76,7 +76,7 @@ BLURBX is a powerful web-based PDF redaction tool that helps you protect sensiti
 ## Project Structure
 
 ```
-blurbx/
+blurbox/
 ├── app.py              # Flask web application
 ├── pdf_redactor.py     # PDF redaction core functionality
 ├── requirements.txt    # Python dependencies
