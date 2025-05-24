@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLURBX - PDF Redaction Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        .dropzone {
+            border: 2px dashed var(--primary-color);
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            color: var(--primary-color);
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .dropzone.dragover {
+            background: #e2e6ea;
+            border-color: var(--accent-color);
+        }
+        .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        .form-check-input:checked {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        .logo-subtitle {
+            color: var(--secondary-color);
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <div class="logo">BLURBX</div>
+        <div class="logo-subtitle">Secure PDF Redaction Tool</div>
+    </div>
+    <form method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm">
+        <div class="mb-3">
+            <label for="pdf_file" class="form-label">Upload PDF</label>
+            <div id="dropzone" class="dropzone">
+                <i class="bi bi-cloud-upload fs-1 mb-2"></i>
+                <span id="dropzone-text">Drag & drop your PDF here or click to select</span>
+                <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf" class="form-control" style="display:none;">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Redact:</label><br>
+            {% for key, label in redact_options %}
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="{{key}}" name="{{key}}" value="1" {% if key in ['phonenumber','email','link'] %}checked{% endif %}>
+                    <label class="form-check-label" for="{{key}}">{{label}}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="color" class="form-label">Redaction Color</label>
+                <select class="form-select" id="color" name="color">
+                    {% for color in color_options %}
+                        <option value="{{color}}" {% if color=='black' %}selected{% endif %}>{{color.title()}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="text" class="form-label">Redaction Text</label>
+                <input type="text" class="form-control" id="text" name="text" value="[REDACTED]">
+            </div>
+            <div class="col-md-4">
+                <label for="mask" class="form-label">Custom Word/Phrase to Redact</label>
+                <input type="text" class="form-control" id="mask" name="mask" placeholder="(optional)">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-shield-lock me-2"></i>Redact PDF
+        </button>
+    </form>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-warning mt-3">
+          {{ messages[0] }}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if redaction_info %}
+    <div class="card mt-4 p-4 shadow-sm">
+        <h3 class="mb-3">Redaction Summary</h3>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Total Pages</h5>
+                        <p class="card-text display-6">{{ redaction_info.total_pages }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Redacted Pages</h5>
+                        <p class="card-text display-6">{{ redaction_info.redacted_pages|length }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Total Redactions</h5>
+                        <p class="card-text display-6">{{ redaction_info.redacted_items|sum }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if redaction_info.redacted_items %}
+        <div class="mt-4">
+            <h4>Redaction Details</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type, count in redaction_info.redacted_items.items() %}
+                        <tr>
+                            <td>{{ type|title }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if redaction_info.redacted_pages %}
+        <div class="mt-4">
+            <h4>Redacted Pages</h4>
+            <p class="text-muted">Pages containing redacted content: {{ redaction_info.redacted_pages|join(', ') }}</p>
+        </div>
+        {% endif %}
+
+        {% if download_file %}
+        <div class="mt-4 text-center">
+            <a href="{{ url_for('download_file', filename=download_file) }}" class="btn btn-success btn-lg">
+                <i class="bi bi-download me-2"></i>Download Redacted PDF
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+<script>
+    // Drag and drop logic
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('pdf_file');
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+    });
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            document.getElementById('dropzone-text').textContent = e.dataTransfer.files[0].name;
+        }
+    });
+    fileInput.addEventListener('change', (e) => {
+        if (fileInput.files.length) {
+            document.getElementById('dropzone-text').textContent = fileInput.files[0].name;
+        }
+    });
+</script>
+</body>
+</html> 
