@@ -1,0 +1,8 @@
+numpy==2.2.5
+opencv_python==4.11.0.86
+phonenumbers==8.13.39
+Pillow==11.2.1
+pymupdf==1.25.5
+
+tqdm==4.66.6
+Flask==3.0.2

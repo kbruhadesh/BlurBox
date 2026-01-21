@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlurBox - Secure Redaction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --bg-body: #f1f5f9;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 2rem;
+        }
+
+        .navbar {
+            background: var(--surface);
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .brand-logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        .main-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .card-header-custom {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: #f8fafc;
+        }
+
+        .card-body-custom {
+            padding: 2rem;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 3rem 2rem;
+            text-align: center;
+            background: #f8fafc;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+        }
+
+        .dropzone:hover,
+        .dropzone.dragover {
+            border-color: var(--primary);
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .section-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .option-group {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            height: 100%;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-primary-custom {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary-custom:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .preview-container {
+            height: 600px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: #333;
+        }
+
+        .pdf-embed {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container">
+            <a class="brand-logo text-decoration-none d-flex align-items-center" href="/">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="BlurBox Logo" height="40" class="me-2">
+                <span>BlurBox</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row g-4">
+            <!-- Left Column: Upload & Options -->
+            <div class="col-lg-5">
+                <div class="main-card mb-4">
+                    <div class="card-header-custom">
+                        <h5 class="mb-0 fw-bold">Configuration</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <form method="POST" enctype="multipart/form-data">
+
+                            <!-- Upload -->
+                            <div class="mb-4">
+                                <label class="section-title">Source File</label>
+                                <div id="dropzone" class="dropzone">
+                                    <i class="bi bi-file-earmark-pdf fs-1 mb-2 d-block text-muted"></i>
+                                    <span class="fw-medium" id="dropzone-text">Click or drag PDF here</span>
+                                    <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf"
+                                        style="display:none;">
+                                </div>
+                            </div>
+
+                            <!-- Scope -->
+                            <div class="mb-4">
+                                <label class="section-title">Scope</label>
+                                <div>
+                                    <label class="form-label small text-muted">Page Range (Optional)</label>
+                                    <input type="text" class="form-control" name="pages"
+                                        placeholder="e.g. 1-3, 5, 8-10 (Leave empty for all)">
+                                    <div class="form-text small">Specific pages to redact.</div>
+                                </div>
+                            </div>
+
+                            <!-- Options -->
+                            <div class="mb-4">
+                                <label class="section-title">Redaction Targets</label>
+                                <div class="option-group">
+                                    <div class="row g-2">
+                                        {% for key, label in redact_options %}
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="{{key}}"
+                                                    name="{{key}}" value="1" {% if key in ['phonenumber','email','link']
+                                                    %}checked{% endif %}>
+                                                <label class="form-check-label small" for="{{key}}">{{label}}</label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custom Rules -->
+                            <div class="mb-4">
+                                <label class="section-title">Custom Rules</label>
+                                <div class="vstack gap-3">
+                                    <div>
+                                        <label class="form-label small text-muted">Specific Word/Phrase</label>
+                                        <input type="text" class="form-control" name="mask"
+                                            placeholder="e.g. Confidential Project">
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted">Overlay Text</label>
+                                            <input type="text" class="form-control" name="text" value="[REDACTED]">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted">Color</label>
+                                            <select class="form-select" name="color">
+                                                {% for color in color_options %}
+                                                <option value="{{color}}" {% if color=='black' %}selected{% endif %}>
+                                                    {{color|title}}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-custom w-100">
+                                <i class="bi bi-shield-check me-2"></i>Process & Redact
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Result & Preview -->
+            <div class="col-lg-7">
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div class="alert alert-warning shadow-sm border-0 mb-4">{{ messages[0] }}</div>
+                {% endif %}
+                {% endwith %}
+
+                {% if redaction_info %}
+                <div class="main-card">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Results</h5>
+                        {% if download_file %}
+                        <a href="{{ url_for('download_file', filename=download_file) }}" class="btn btn-sm btn-success">
+                            <i class="bi bi-download me-1"></i> Download
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body-custom">
+                        <!-- Stats -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ redaction_info.total_pages }}</div>
+                                    <div class="stat-label">Pages</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ redaction_info.redacted_pages|length }}</div>
+                                    <div class="stat-label">Affected</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ redaction_info.redacted_items.values()|sum }}</div>
+                                    <div class="stat-label">Redactions</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview -->
+                        <label class="section-title">Live Preview</label>
+                        {% if download_file %}
+                        <div class="preview-container">
+                            <embed src="{{ url_for('preview_file', filename=download_file) }}" type="application/pdf"
+                                class="pdf-embed">
+                        </div>
+                        <div class="text-center mt-2 text-muted small">
+                            <i class="bi bi-info-circle me-1"></i> Previewing {{ download_file }}
+                        </div>
+                        {% else %}
+                        <div class="text-center p-5 text-muted bg-light rounded">
+                            Preview unavailable
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="main-card h-100 d-flex align-items-center justify-content-center p-5 bg-light text-center">
+                    <div class="text-muted">
+                        <i class="bi bi-file-earmark-lock display-1 mb-3 d-block opacity-25"></i>
+                        <h4 class="fw-normal">Ready to Process</h4>
+                        <p>Upload a document to see redaction preview here.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('pdf_file');
+        const dropText = document.getElementById('dropzone-text');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropzone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropzone.classList.remove('dragover');
+        }
+
+        dropzone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        fileInput.addEventListener('change', function () {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                fileInput.files = files;
+                dropText.innerHTML = `<strong>${files[0].name}</strong><br><span class="small text-muted">Ready to upload</span>`;
+                dropzone.classList.add('border-primary');
+            }
+        }
+    </script>
+</body>
+
+</html>
