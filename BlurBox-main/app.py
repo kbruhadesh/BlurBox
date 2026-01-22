@@ -4,8 +4,9 @@ from werkzeug.utils import secure_filename
 from pdf_redactor import blurbox_redact
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'  # Required for flash messages
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 
 # Create uploads folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -96,8 +97,8 @@ def index():
             flash('No file selected')
             return redirect(request.url)
             
-        if not file.filename.lower().endswith('.pdf'):
-            flash('Please upload a PDF file')
+        if not file.filename.lower().endswith('.pdf') or file.mimetype != 'application/pdf':
+            flash('Invalid file. Please upload a valid PDF.')
             return redirect(request.url)
             
         # Save uploaded file

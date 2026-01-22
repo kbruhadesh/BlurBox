@@ -266,32 +266,77 @@
                     <div class="card-header-custom d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold">Results</h5>
                         {% if download_file %}
-                        <a href="{{ url_for('download_file', filename=download_file) }}" class="btn btn-sm btn-success">
-                            <i class="bi bi-download me-1"></i> Download
-                        </a>
+                        <div class="d-flex gap-2">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                                    data-bs-toggle="dropdown">
+                                    <i class="bi bi-share me-1"></i> Share
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><button class="dropdown-item"
+                                            onclick="shareNative('{{ url_for('download_file', filename=download_file, _external=True) }}')"><i
+                                                class="bi bi-phone me-2"></i>Native Share</button></li>
+                                    <li><button class="dropdown-item"
+                                            onclick="copyLink('{{ url_for('download_file', filename=download_file, _external=True) }}')"><i
+                                                class="bi bi-clipboard me-2"></i>Copy Link</button></li>
+                                    <li><button class="dropdown-item"
+                                            onclick="shareEmail('{{ url_for('download_file', filename=download_file, _external=True) }}')"><i
+                                                class="bi bi-envelope me-2"></i>Email</button></li>
+                                </ul>
+                            </div>
+                            <a href="{{ url_for('download_file', filename=download_file) }}"
+                                class="btn btn-sm btn-success">
+                                <i class="bi bi-download me-1"></i> Download
+                            </a>
+                        </div>
                         {% endif %}
                     </div>
                     <div class="card-body-custom">
                         <!-- Stats -->
+                        <!-- Stats -->
                         <div class="row g-3 mb-4">
-                            <div class="col-4">
-                                <div class="stat-card">
+                            <div class="col-md-4">
+                                <div class="stat-card h-100">
                                     <div class="stat-value">{{ redaction_info.total_pages }}</div>
-                                    <div class="stat-label">Pages</div>
+                                    <div class="stat-label">Total Pages</div>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="stat-card">
+                            <div class="col-md-4">
+                                <div class="stat-card h-100">
                                     <div class="stat-value">{{ redaction_info.redacted_pages|length }}</div>
-                                    <div class="stat-label">Affected</div>
+                                    <div class="stat-label">Pages Modified</div>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="stat-card">
+                            <div class="col-md-4">
+                                <div class="stat-card h-100">
                                     <div class="stat-value">{{ redaction_info.redacted_items.values()|sum }}</div>
-                                    <div class="stat-label">Redactions</div>
+                                    <div class="stat-label">Total Redactions</div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Detailed Breakdown -->
+                        <div class="mb-4">
+                            {% if redaction_info.redacted_items.values()|sum == 0 %}
+                            <div class="alert alert-warning border-0 shadow-sm">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                No sensitive information was found or redacted.
+                            </div>
+                            {% else %}
+                            <label class="section-title">Redaction Summary</label>
+                            <div class="row g-2">
+                                {% for type, count in redaction_info.redacted_items.items() %}
+                                {% if count > 0 %}
+                                <div class="col-6 col-md-4">
+                                    <div class="p-2 border rounded bg-white text-center">
+                                        <div class="fw-bold text-primary">{{ count }}</div>
+                                        <div class="small text-muted text-capitalize">{{ type }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
 
                         <!-- Preview -->
@@ -374,6 +419,38 @@
                 dropText.innerHTML = `<strong>${files[0].name}</strong><br><span class="small text-muted">Ready to upload</span>`;
                 dropzone.classList.add('border-primary');
             }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sharing Functions
+        async function shareNative(url) {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Redacted PDF',
+                        text: 'Here is your redacted PDF file.',
+                        url: url
+                    });
+                } catch (err) {
+                    console.error('Share failed:', err);
+                }
+            } else {
+                alert('Native sharing is not supported on this device/browser. Please use Copy Link.');
+            }
+        }
+
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                prompt("Copy this link:", url);
+            });
+        }
+
+        function shareEmail(url) {
+            window.location.href = `mailto:?subject=Redacted PDF&body=Here is the download link: ${url}`;
         }
     </script>
 </body>
